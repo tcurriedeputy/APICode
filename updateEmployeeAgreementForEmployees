@@ -1,0 +1,68 @@
+/*
+TITLE:
+- Update Employee Agreement (Pay Details) for Employees
+AUTHOR:
+- Tayler Currie
+DATE:
+- 2021-11-17
+FUNCTION:
+- Change the pay details/employee agreement of an employee (in bulk if necessary) for employees with the same employee agreement
+VARIABLES:
+- array = the array in which the collected employee agreements reside
+- intOldContractId = the existing contract Id that is linked to the employees that you are wanting to update
+- booleanIsActive = boolean to utilise to filter if the employee agreement is active or not (as employees could have multiple employee agreements that are inactive)
+- intNewContractId = the contract id which you would like to update the old contract id
+FUNCTION EXAMPLE:
+- updateEmployeeAgreements(156, true, 159)
+NOTES:
+- Note, this will collect all employees with the contract id that is entered into 'intOldContractId' and update ALL of these employees. If you don't want to update all, you'll need another filter.
+*/
+
+var array = [];
+
+function updateEmployeeAgreements(intOldContractId, booleanIsActive, intNewContractId) {
+    $.ajax({
+        url: '/api/v1/resource/EmployeeAgreement/QUERY'
+        , type: 'POST'
+        , data: JSON.stringify(
+            {
+                search: {
+                    f1: {field:'Contract', type:'eq', data:intOldContractId}
+                    ,f2: {field:'Active', type:'eq', data:booleanIsActive}
+                    // ,f3: {field:'', type:'', data:''}
+                }, max: 500, join: [], assoc: [], sort:{}
+            }
+        )
+        , success: function(mixreply) {
+            if(mixreply.length === 0){
+                console.log('Query Successful, no records returned', mixreply)
+            }else{
+                console.log('Query Successful');
+                for(var i = 0; i < mixreply.length; i++) {
+                    var a = mixreply[i];
+                    array.push(a);
+                    var employeeAgreementId = array[i].Id
+
+                    $.ajax({
+                        url: '/api/v1/resource/EmployeeAgreement/' + employeeAgreementId
+                        , type: 'POST'
+                        , async: false
+                        , data: JSON.stringify({
+                            Contract: intNewContractId 
+                        })
+                        , success: function(mixreply) {console.log('successful POST'); console.log(mixreply);}
+                        , error: function(mixerror) {console.log('error'); console.log(mixerror);}
+                    });
+                }
+                    }
+
+                console.log(array);
+        }
+        , error: function(mixerror) {
+            console.log('Query Failed', mixerror);
+        }
+        , complete: function() {
+            console.log('AJAX Execution Complete');
+        }
+    });
+}
